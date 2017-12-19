@@ -65,7 +65,7 @@ data_int <- interpolateXyears( data_int, int_method = iam_interpolation_method )
 # 4. Output
 # write the interpolated IAM data into the intermediate-output folder 
 out_filname <- paste0( 'A.', iam, '_data_interpolated', '_', RUNSUFFIX )
-writeData( iam_data_int, 'MED_OUT', out_filname, meta = F )  
+writeData( data_int, 'MED_OUT', out_filname, meta = F )  
 
 # END
 logStop( )
