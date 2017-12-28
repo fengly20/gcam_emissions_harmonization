@@ -153,12 +153,12 @@ dropUncoveredIAMEmissions <- function( em_coverage_mapping, em_data, iam_name, r
 # input files: null
 # output: null
 createIAMLayout <- function( num_regions, num_sectors, num_scenarios, num_em, num_model, num_unit ) {
-  layout<- data.frame( em = NULL, region = NULL, CEDS16 = NULL, scenario = NULL )
+  layout<- data.frame( em = NULL, region = NULL, sector = NULL, scenario = NULL )
   for ( em in num_em ) {
     for ( scenario in num_scenarios ) {
       for ( sector in num_sectors ) {
         
-        df_block <- data.frame( em = em, region = num_regions, CEDS16 = sector, scenario = scenario, stringsAsFactors = F )
+        df_block <- data.frame( em = em, region = num_regions, sector = sector, scenario = scenario, stringsAsFactors = F )
         
         layout <- rbind( layout, df_block ) 
         }
@@ -186,7 +186,7 @@ completeLayoutNA <- function( df, num_regions, num_sectors, num_scenarios, num_e
   
   df_merge <- merge( standard_layout, df, by = intersect( names( standard_layout ), names( df ) ), 
                      all.x = T )
-  df_return <- df_merge[ , c( c(  'model', 'scenario', 'region', 'em', 'CEDS16', 'unit', iam_x_years ) ) ]
+  df_return <- df_merge[ , c( c(  'model', 'scenario', 'region', 'em', 'sector', 'unit', iam_x_years ) ) ]
 
   return( df_return )
   }
@@ -250,19 +250,19 @@ calculateOffset <- function( iam_em,
   # harm_method_specific_mapping = harm_method_mapping
   
   # ----
-  # 1. merge iam_em and ref_em together using 'region', 'em', 'CEDS16'
+  # 1. merge iam_em and ref_em together using 'region', 'em', 'sector'
   x_baseyear <- paste0( 'X', baseyear )
-  iam_baseyear <- iam_em[ , c( "model", "scenario", "em", "CEDS16", "region", 'unit', x_baseyear ) ]
-  ref_baseyear <- ref_em[ , c( "ref_em", "em", "CEDS16", "region", "unit", x_baseyear ) ]
+  iam_baseyear <- iam_em[ , c( "model", "scenario", "em", "sector", "region", 'unit', x_baseyear ) ]
+  ref_baseyear <- ref_em[ , c( "em", "sector", "region", "unit", x_baseyear ) ]
   
-  df_merge <- merge( iam_baseyear, ref_baseyear, by = c( 'em', 'region', 'CEDS16' ), all.x = T )
+  df_merge <- merge( iam_baseyear, ref_baseyear, by = c( 'em', 'region', 'sector' ), all.x = T )
   
   # ---
   # 2. layout check -- there should be no NAs in the merged data frame 
   NA_check <- any( is.na( c( df_merge[ , paste0( x_baseyear, '.x' ) ], df_merge[ , paste0( x_baseyear, '.y' ) ] ) ) )
   
   if ( NA_check ) { 
-    message( 'There are umatched emissions in either IAM emissions or reference emissions...converting unmatched items into 0 ')
+    printLog( 'There are umatched emissions in either IAM emissions or reference emissions...converting unmatched items into 0 ' )
     df_merge[ , paste0( x_baseyear, '.x' ) ] <- ifelse( is.na( df_merge[ , paste0( x_baseyear, '.x' ) ] ) , 0, 
                                                       df_merge[ , paste0( x_baseyear, '.x' ) ] )
     df_merge[ , paste0( x_baseyear, '.y' ) ] <- ifelse( is.na( df_merge[ , paste0( x_baseyear, '.y' ) ] ), 0, 
@@ -288,17 +288,17 @@ calculateOffset <- function( iam_em,
     # ---
     # 3.2. generate offset_df using default harmonization method ( which has two possibilities )
   if ( harmonization_type == 'offset' ) { 
-    header_col_name <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit.y" ) 
+    header_col_name <- c( "em", "region", "sector", "model", "scenario", "ref_em", "unit.y" ) 
     offset_df <- df_merge[ , header_col_name ]
-    colnames( offset_df ) <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit" ) 
+    colnames( offset_df ) <- c( "em", "region", "sector", "model", "scenario", "ref_em", "unit" ) 
     offset_df$harmonization_type <- harmonization_type
     offset_df[ , x_baseyear ] <- df_merge[ , paste0( x_baseyear, '.y' ) ] - df_merge[ , paste0( x_baseyear, '.x' ) ]
     }
   
   if ( harmonization_type == 'ratio' ) { 
-    header_col_name <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit.y" ) 
+    header_col_name <- c( "em", "region", "sector", "model", "scenario", "ref_em", "unit.y" ) 
     offset_df <- df_merge[ , header_col_name ]
-    colnames( offset_df ) <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit" ) 
+    colnames( offset_df ) <- c( "em", "region", "sector", "model", "scenario", "ref_em", "unit" ) 
     offset_df$harmonization_type <- harmonization_type
     offset_df[ , x_baseyear ] <- df_merge[ , paste0( x_baseyear, '.y' ) ] / df_merge[ , paste0( x_baseyear, '.x' ) ]
     offset_df[ , x_baseyear ] <- ifelse( is.nan( offset_df[ , x_baseyear ] ), 1, offset_df[ , x_baseyear ] )
@@ -313,15 +313,15 @@ calculateOffset <- function( iam_em,
   
   # ---
   # 4. additional routine of write out both offset and ratio as a diagnostic output
-  header_col_name <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit.y" ) 
+  header_col_name <- c( "em", "region", "sector", "model", "scenario", "unit.y" ) 
   diag_df <- df_merge[ , header_col_name ]
-  colnames( diag_df ) <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit" ) 
+  colnames( diag_df ) <- c( "em", "region", "sector", "model", "scenario", "unit" ) 
   diag_df[ , paste0( 'offset_', x_baseyear ) ] <- df_merge[ , paste0( x_baseyear, '.y' ) ] - df_merge[ , paste0( x_baseyear, '.x' ) ]
   diag_df[ , paste0( 'offset_', x_baseyear ) ] <- abs( diag_df[ , paste0( 'offset_', x_baseyear ) ] )
   diag_df[ , paste0( 'ratio_', x_baseyear ) ] <- df_merge[ , paste0( x_baseyear, '.y' ) ] / df_merge[ , paste0( x_baseyear, '.x' ) ]
   diag_df[ , paste0( 'iam_', x_baseyear ) ] <- df_merge[ , paste0( x_baseyear, '.x' ) ]
   diag_df[ , paste0( 'ref_', x_baseyear ) ] <- df_merge[ , paste0( x_baseyear, '.y' ) ]
-  out_filname <- paste0( 'A.', ref_name, '_', iam_name, '_baseyear_offset_ratio' )
+  out_filname <- paste0( 'A.', ref_name, '_', iam_name, '_baseyear_offset_ratio', '_', RUNSUFFIX )
   writeData( diag_df, 'DIAG_OUT', out_filname )  
   
   return( offset_df )
@@ -338,6 +338,7 @@ calculateOffset <- function( iam_em,
 # output: null
 
 calculateOffsetBySector <- function( sector, full_df, x_baseyear, harm_method_mapping ) { 
+
   # ---
   # 1. extract harm method adn parameters from harm_mthod_mapping
   harm_method <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, 'harm_method' ]
@@ -345,21 +346,21 @@ calculateOffsetBySector <- function( sector, full_df, x_baseyear, harm_method_ma
   
   # ---
   # 2. extract the sector data from full_df  
-  harm_temp_df <- full_df[ full_df$CEDS16 == sector, ]
+  harm_temp_df <- full_df[ full_df$sector == sector, ]
   
   # ---
   # 3. calculate offset
   if ( harm_type == 'offset' ) { 
-    header_col_name <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit.y" ) 
+    header_col_name <- c( "em", "region", "sector", "model", "scenario", "unit.y" ) 
     offset_df <- harm_temp_df[ , header_col_name ]
-    colnames( offset_df ) <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit" ) 
+    colnames( offset_df ) <- c( "em", "region", "sector", "model", "scenario", "unit" ) 
     offset_df$harmonization_type <- harm_type
     offset_df[ , x_baseyear ] <- harm_temp_df[ , paste0( x_baseyear, '.y' ) ] - harm_temp_df[ , paste0( x_baseyear, '.x' ) ]
     }
   if ( harm_type == 'ratio' ) { 
-    header_col_name <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit.y" ) 
+    header_col_name <- c( "em", "region", "sector", "model", "scenario", "unit.y" ) 
     offset_df <- harm_temp_df[ , header_col_name ]
-    colnames( offset_df ) <- c( "em", "region", "CEDS16", "model", "scenario", "ref_em", "unit" ) 
+    colnames( offset_df ) <- c( "em", "region", "sector", "model", "scenario", "unit" ) 
     offset_df$harmonization_type <- harm_type
     offset_df[ , x_baseyear ] <- harm_temp_df[ , paste0( x_baseyear, '.y' ) ] / harm_temp_df[ , paste0( x_baseyear, '.x' ) ]
     offset_df[ , x_baseyear ] <- ifelse( is.nan( offset_df[ , x_baseyear ] ), 1, offset_df[ , x_baseyear ] )
@@ -405,7 +406,7 @@ extendOffset <- function( offset_df,
   
   # ---
   # 1. setup some basics 
-  header_col_names <- c( "model", "scenario", "em", "region", "CEDS16", "unit" ) 
+  header_col_names <- c( "model", "scenario", "em", "region", "sector", "unit" ) 
   x_baseyear <- paste0( 'X', baseyear )
   
   # ---
@@ -417,8 +418,8 @@ extendOffset <- function( offset_df,
     # under this condition, the harm_method_specific_type should exist in the global environment
     # harm_method_specific_type could have several valid values, for now only construct method for 'sector'
     if ( harm_method_specific_type == 'sector' ) { 
-      #harm_sectors <- harm_method_specific_mapping$CEDS16 
-      harm_sectors <- unique( offset_df$CEDS16 )
+      #harm_sectors <- harm_method_specific_mapping$sector 
+      harm_sectors <- unique( offset_df$sector )
       offset_extended_list <- lapply( harm_sectors, 
                                       harmMethod_selectNapply_bySector, 
                                       offset_df, 
@@ -638,14 +639,15 @@ harmMethod_selectNapply_bySector <- function( sector = NA,
 							                                harm_end_year = NA,
 							                                x_baseyear = NA,
 							                                header_col_names = NA ) { 
-										 
-  harm_method <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, "harm_method" ] 
+	#print( sector )
+  									 
+  harm_method <- harm_method_mapping[ harm_method_mapping$CEDS == sector, "harm_method" ] 
   offset_reduce_year <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, "offset_reduced_year" ]
   offset_reduce_value <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, "offset_reduced_value" ]
   ratio_reduce_year <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, "ratio_reduced_year" ]
   ratio_reduce_value <- harm_method_mapping[ harm_method_mapping$CEDS16 == sector, "ratio_reduced_value" ]
   
-  offset_df <- offset_df[ offset_df$CEDS16 == sector, ]
+  offset_df <- offset_df[ offset_df$sector == sector, ]
   
   offset_extended <- harmMethod_selectNapply( harm_method = harm_method,
                                               offset_df = offset_df,
@@ -687,19 +689,19 @@ applyOffset <- function( iam_em,
   iam_em_x_years <- grep( 'X', colnames( iam_em ), value = T )  
   harm_x_years <- paste0( 'X', harm_start_year : harm_end_year )
   none_harm_x_years <- iam_em_x_years[ which( !( iam_em_x_years %in% harm_x_years ) ) ]
-  header_col_names <- c( "model", "scenario", "em", "CEDS16", "region", "unit" )
+  header_col_names <- c( "model", "scenario", "em", "sector", "region", "unit" )
   
   # ---
   # 2. merge the iam_em and offset_df together
-  merge_df <- merge( iam_em, offset_df, by = c( "em", "CEDS16", "region", 'scenario' ) )
+  merge_df <- merge( iam_em, offset_df, by = c( "em", "sector", "region", 'scenario' ) )
   
   # ---
   # 3. apply offset depending on the harmonization stratedgy 
   if ( harmonization_method_specific_flag == 'Y' ) { 
     
     # sector check 
-    iam_sector_list <- sort( unique( iam_em$CEDS16 ) )
-    offset_sector_list <- sort( unique( offset_df$CEDS16 ) )
+    iam_sector_list <- sort( unique( iam_em$sector ) )
+    offset_sector_list <- sort( unique( offset_df$sector ) )
     if ( !identical( iam_sector_list, offset_sector_list ) ) { stop( 'something wrong, the sectors does not match ' ) }
     
     # apply the offset -- three conditions (1) all offset
@@ -707,8 +709,8 @@ applyOffset <- function( iam_em,
     #                                      (3) some offst some ratio
     
     # extract offset and ratio sectors from the mapping
-    mapping_offset_sector <- harmonization_method_specific_mapping[ harmonization_method_specific_mapping$harm_method %in% c( 'offset_constant', 'offset_reduced' ), 'CEDS16' ]
-    mapping_ratio_sector <- harmonization_method_specific_mapping[ harmonization_method_specific_mapping$harm_method %in% c( 'ratio_constant', 'ratio_reduced' ), 'CEDS16' ]
+    mapping_offset_sector <- harmonization_method_specific_mapping[ harmonization_method_specific_mapping$harm_method %in% c( 'offset_constant', 'offset_reduced' ), 'sector' ]
+    mapping_ratio_sector <- harmonization_method_specific_mapping[ harmonization_method_specific_mapping$harm_method %in% c( 'ratio_constant', 'ratio_reduced' ), 'sector' ]
     # find offset and ratio sectors for iam_em sectors
     offset_sector_list <- iam_sector_list[ which( iam_sector_list %in% mapping_offset_sector ) ] 
     ratio_sector_list <- iam_sector_list[ which( iam_sector_list %in% mapping_ratio_sector ) ]
@@ -717,7 +719,7 @@ applyOffset <- function( iam_em,
       harmed_df <- merge_df
       harmed_df[ , paste0( harm_x_years, '.x' ) ] <- harmed_df[ , paste0( harm_x_years, '.x' ) ] + 
                                                      harmed_df[ , paste0( harm_x_years, '.y' ) ]
-      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                    none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df ) <- gsub( '.x', '', colnames( harmed_df ) )
       }
@@ -727,23 +729,23 @@ applyOffset <- function( iam_em,
       harmed_df[ , paste0( harm_x_years, '.x' ) ] <- harmed_df[ , paste0( harm_x_years, '.x' ) ] * 
                                                      harmed_df[ , paste0( harm_x_years, '.y' ) ]
     
-      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                  none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df ) <- gsub( '.x', '', colnames( harmed_df ) )
     }
     # condition (3) 
     if ( length( offset_sector_list )!= 0 & length( ratio_sector_list ) != 0 ) { 
-      harmed_df_offset <- merge_df[ merge_df$CEDS16 %in% offset_sector_list,  ]
+      harmed_df_offset <- merge_df[ merge_df$sector %in% offset_sector_list,  ]
       harmed_df_offset[ , paste0( harm_x_years, '.x' ) ] <- harmed_df_offset[ , paste0( harm_x_years, '.x' ) ] + 
                                                             harmed_df_offset[ , paste0( harm_x_years, '.y' ) ]
-      harmed_df_offset <- harmed_df_offset[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df_offset <- harmed_df_offset[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                                  none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df_offset ) <- gsub( '.x', '', colnames( harmed_df_offset ) )
     
-      harmed_df_ratio <- merge_df[ merge_df$CEDS16 %in% ratio_sector_list,  ]
+      harmed_df_ratio <- merge_df[ merge_df$sector %in% ratio_sector_list,  ]
       harmed_df_ratio[ , paste0( harm_x_years, '.x' ) ] <- harmed_df_ratio[ , paste0( harm_x_years, '.x' ) ] * 
                                                            harmed_df_ratio[ , paste0( harm_x_years, '.y' ) ]
-      harmed_df_ratio <- harmed_df_ratio[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df_ratio <- harmed_df_ratio[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                    none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df_ratio ) <- gsub( '.x', '', colnames( harmed_df_ratio ) )
       
@@ -756,7 +758,7 @@ applyOffset <- function( iam_em,
       harmed_df <- merge_df
       harmed_df[ , paste0( harm_x_years, '.x' ) ] <- harmed_df[ , paste0( harm_x_years, '.x' ) ] + 
                                                      harmed_df[ , paste0( harm_x_years, '.y' ) ]
-      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                    none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df ) <- gsub( '.x', '', colnames( harmed_df ) )
     }
@@ -765,7 +767,7 @@ applyOffset <- function( iam_em,
       harmed_df[ , paste0( harm_x_years, '.x' ) ] <- harmed_df[ , paste0( harm_x_years, '.x' ) ] * 
                                                      harmed_df[ , paste0( harm_x_years, '.y' ) ]
     
-      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "CEDS16", "region", "unit.x", 
+      harmed_df <- harmed_df[ , c( "model.x", "scenario", "em", "sector", "region", "unit.x", 
                                  none_harm_x_years, paste0( harm_x_years, '.x' ) ) ]
       colnames( harmed_df ) <- gsub( '.x', '', colnames( harmed_df ) )
     }

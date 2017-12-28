@@ -319,3 +319,45 @@ Emissions|CO2|Energy|Supply,emission
 Emissions|CO2|Energy|Supply|Electricity,emission
 Emissions|CO2|Energy|Supply|Liquids,emission
 Emissions|CO2|Industrial Processes,emission
+Emissions|CH4,emission
+Emissions|CH4|AFOLU,emission
+Emissions|CH4|AFOLU|Aggregate - Agriculture and Biomass Burning,emission
+Emissions|CH4|AFOLU|Agriculture,emission
+Emissions|CH4|AFOLU|Agriculture|Livestock,emission
+Emissions|CH4|AFOLU|Agriculture|Livestock|Enteric Fermentation,emission
+Emissions|CH4|AFOLU|Agriculture|Rice,emission
+Emissions|CH4|AFOLU|Biomass Burning,emission
+Emissions|CH4|AFOLU|Land,emission
+Emissions|CH4|AFOLU|Land|Forest Burning,emission
+Emissions|CH4|AFOLU|Land|Grassland Burning,emission
+Emissions|CH4|Aggregate - Fossil Fuels and Industry,emission
+Emissions|CH4|Energy,emission
+Emissions|CH4|Energy|Demand,emission
+Emissions|CH4|Energy|Demand|Aggregate - Residential and Commercial,emission
+Emissions|CH4|Energy|Demand|Commercial,emission
+Emissions|CH4|Energy|Demand|Industry,emission
+Emissions|CH4|Energy|Demand|Residential,emission
+Emissions|CH4|Energy|Demand|Transportation,emission
+Emissions|CH4|Energy|Demand|Transportation|Aggregate - Rail and Domestic Shipping,emission
+Emissions|CH4|Energy|Demand|Transportation|Aggregate - Road Rail and Domestic Shipping,emission
+Emissions|CH4|Energy|Demand|Transportation|Aviation,air_shp_emissions
+Emissions|CH4|Energy|Demand|Transportation|Aviation|Domestic,air_shp_emissions
+Emissions|CH4|Energy|Demand|Transportation|Aviation|International,air_shp_emissions
+Emissions|CH4|Energy|Demand|Transportation|Rail,emission
+Emissions|CH4|Energy|Demand|Transportation|Road,emission
+Emissions|CH4|Energy|Demand|Transportation|Shipping,air_shp_emissions
+Emissions|CH4|Energy|Demand|Transportation|Shipping|Domestic,emission
+Emissions|CH4|Energy|Demand|Transportation|Shipping|International,air_shp_emissions
+Emissions|CH4|Energy|Other,emission
+Emissions|CH4|Energy|Supply,emission
+Emissions|CH4|Energy|Supply|Aggregate - Electricity and Heat,emission
+Emissions|CH4|Energy|Supply|Electricity,emission
+Emissions|CH4|Energy|Supply|Gases,emission
+Emissions|CH4|Energy|Supply|Heat,emission
+Emissions|CH4|Energy|Supply|Liquids,emission
+Emissions|CH4|Energy|Supply|Other,emission
+Emissions|CH4|Energy|Supply|Solids,emission
+Emissions|CH4|Industrial Processes,emission
+Emissions|CH4|Other,emission
+Emissions|CH4|Product Use|Solvents,emission
+Emissions|CH4|Waste,emission

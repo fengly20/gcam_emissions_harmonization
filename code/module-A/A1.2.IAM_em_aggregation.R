@@ -14,7 +14,7 @@
 
 # Call standard script header function to read in universal header files - 
 # provides logging, file support, and system functions - and start the script log.
-log_msg <- "Aggregate IAM data" 
+log_msg <- "Aggregate IAM data and transform into complete layout" 
 script_name <- "A1.2.IAM_em_aggregation.R"
 
 initialize( script_name, log_msg )
@@ -43,7 +43,11 @@ variable_list <- readData( domain = 'MAPPINGS', file_name = iam_variable_list )
 
 # master sector list 
 msl <- readData( domain = 'MAPPINGS', file_name = 'IAMC_sector_mapping_CEDS16' )
-  
+
+# region mapping 
+region_mapping <- readData( 'MAPPINGS', ref_region_mapping )
+
+
 # ------------------------------------------------------------------------------
 # 2. Read in IAM data 
 iam_data <- readData( 'MED_OUT', paste0( 'A.', iam, '_data_interpolated', '_', RUNSUFFIX ) )
@@ -73,36 +77,15 @@ iam_em_CEDS16 <- aggregate( iam_em_agg[ , iam_xyears ],
                                        iam_em_agg$region, iam_em_agg$em, iam_em_agg$CEDS16, iam_em_agg$unit ),
                             FUN = sum )
 # clean up the layout
-colnames( iam_em_CEDS16 ) <- c( 'model', 'scenario', 'region', 'em', 'CEDS16', 'unit', iam_xyears ) 
+colnames( iam_em_CEDS16 ) <- c( 'model', 'scenario', 'region', 'em', 'sector', 'unit', iam_xyears ) 
 
 # ------------------------------------------------------------------------------
 # 5. layout check - for each region per emission species per scenario, there should be 14 sectors( AIR and SHP are processed seperately). 
 #    Fille non-existing emissions with NA
-native_reg_list <- native_reg_list 
-sector_list <- sort( unique( ds_sector_mapping$sector ) )
-scenario_list <- sort( unique( iam_data$scenario ) ) 
-em_list <- sort( unique( iam_data$em ) )
-
-
-
-
-
-
-num_model <- unique( iam_em_CEDS16$model )
-num_unit <- unique( iam_em_CEDS16$unit )
-num_regions <- unique( iam_em_CEDS16$region )
-num_scenarios <- unique( iam_em_CEDS16$scenario ) 
-num_em <- unique( iam_em_CEDS16$em )
-num_sectors <- unique( msl$sector ) 
-#num_sectors <- num_sectors[ !is.na( num_sectors ) ]
-num_sectors <- num_sectors[ !( num_sectors %in% c( 'Aircraft', 'International Shipping' ) ) ]
-
-iam_em_complete_layout <- completeLayoutNA( iam_em_CEDS16, num_regions, num_sectors, num_scenarios, num_em, num_model, num_unit, iam_x_years ) 
-
-native_reg_list <- native_reg_list 
-sector_list <- sort( unique( ds_sector_mapping$sector ) )
-scenario_list <- sort( unique( iam_data$scenario ) ) 
-em_list <- sort( unique( iam_data$em ) )
+native_reg_list <- sort( unique( region_mapping$region ) )  
+sector_list <- sort( unique( msl$sector ) )
+scenario_list <- sort( unique( iam_em_CEDS16$scenario ) ) 
+em_list <- sort( unique( iam_em_CEDS16$em ) )
 
 genCompleteLayout <- function( ) { 
   sector_list <- sector_list[ sector_list != "International Shipping" ]
@@ -122,60 +105,29 @@ genCompleteLayout <- function( ) {
         reg_res <- do.call( 'rbind', reg_res_list )
       } )
       sec_res <- do.call( 'rbind', sec_res_list )
-      
-      if ( iam == 'GCAM4' ) model_world <- 'World'
-      if ( iam == 'REMIND-MAGPIE' ) model_world <- 'World'
-      if ( iam == 'MESSAGE-GLOBIOM' ) model_world <- 'World'
-      if ( iam == 'AIM' ) model_world <- 'World'
-      if ( iam == 'IMAGE' ) model_world <- 'World'
-      
-      air_res <- data.frame( scenario = sce, 
-                             em = em, 
-                             region = model_world,
-                             sector = "Aircraft", 
-                             stringsAsFactors = F )
-      shp_res <- data.frame( scenario = sce, 
-                             em = em, 
-                             region = model_world,
-                             sector = "International Shipping", 
-                             stringsAsFactors = F )
-      sec_res <- rbind( sec_res, air_res, shp_res )
     } )
     em_res <- do.call( 'rbind', em_res_list )
   } )
   sce_res <- do.call( 'rbind', sce_res_list )
-  sce_res$model <- unique( iam_data$model )
-  sce_res$harm_status <- unique( iam_data$harm_status )
-  sce_res$unit <- unique( iam_data$unit )
+  sce_res$model <- 'GCAM4'
+  sce_res$harm_status <- 'Unharmonized'
+  sce_res$unit <- 'Mt'
   
   return( sce_res )
 }
 complete_layout <- genCompleteLayout( )  
 
-iam_data <- merge( iam_data, 
-                   complete_layout, 
-                   by = c( 'model', 'scenario', 'region', 'em', 'sector', 'harm_status', 'unit' ), 
-                   all.y = T )
-iam_data[ is.na( iam_data ) ] <- 0 
-
-
-
-
-
-
-
-
-
-
-# -----------------------------------------------------------------------------
-# 6. Remove region World from iam_em_complete_layout.
-
-iam_em_complete_layout <- iam_em_complete_layout[ iam_em_complete_layout$region != 'World', ] 
+iam_final <- merge( iam_em_CEDS16, 
+                    complete_layout, 
+                    by = c( 'model', 'scenario', 'region', 'em', 'sector', 'unit' ), 
+                    all.y = T )
+iam_final[ is.na( iam_final ) ] <- 0 
 
 # ------------------------------------------------------------------------------
 # 7. Output
 # write the IAM emissions into the intermediate-output folder 
-out_filname <- paste0( 'A.', iam, '_emissions_aggregated' )
-writeData( iam_em_complete_layout, 'MED_OUT', out_filname, meta = F  )  
+out_filname <- paste0( 'A.', iam, '_emissions_aggregated', '_', RUNSUFFIX )
+writeData( iam_final, 'MED_OUT', out_filname, meta = F  )  
 
 # END
+logStop()

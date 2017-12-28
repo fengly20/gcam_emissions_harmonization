@@ -24,7 +24,7 @@ dirs <- paste0( unlist( strsplit( getwd(), c( '/', '\\' ), fixed = T ) ), '/' )
 #  }
 #}
 
-setwd( '/Users/Leyang/Documents/GitHub/gcam_emissions_harmonization/input' )
+setwd( 'C:/Users/feng999/Documents/gcam_emissions_harmonization/input' )
 PARAM_DIR <- "../code/parameters/"
 
 # Call standard script header function to read in universal header files - 
@@ -40,7 +40,7 @@ initialize_launchpad( launchpad_name, launchpad_log_msg, headers )
 # 1. Set up desired IAM to be processing
 
 # debug
-args_from_makefile <- c( '/Users/Leyang/Documents/GitHub/gcam_emissions_harmonization/input/GCAM/SSP4-Ref_V19.xlsx' )
+args_from_makefile <- c( 'C:/Users/feng999/Documents/gcam_emissions_harmonization/input/GCAM/SSP4-Ref_V19.xlsx' )
 
 # the flag for intermediate file cleaning
 MED_OUT_CLEAN <- F
@@ -65,12 +65,19 @@ domainmapping[ domainmapping$Domain == 'MED_OUT', "PathToDomain" ] <- med_out
 
 # -----------------------------------------------------------------------------
 # 2. Source module-B script in order
-source( '../code/module-B/B.1.IAM_input_reformatting.R' )
-source( '../code/module-B/B.2.IAM_reference_emission_preparation.R' )
-source( '../code/module-B/B.3.regional_pop_gdp_preparation.R' )
-source( '../code/module-B/B.4.1.IAM_emissions_downscaling_linear.R' )
-source( '../code/module-B/B.4.2.IAM_emissions_downscaling_ipat.R' )
-source( '../code/module-B/B.5.IAM_emissions_downscaled_cleanup.R' )
+source( '../code/module-A/A1.1.IAM_data_interpolation.R' )
+source( '../code/module-A/A1.2.IAM_em_aggregation.R' )
+source( '../code/module-A/A1.3.IAM_em_aviation_shipping_separation.R' )
+source( '../code/module-A/A1.4.IAM_harm_proxy_separation.R' )
+#source( '../code/module-A/A1.5.IAM_downscale_data_separation.R' )
+source( '../code/module-A/A2.1.ref_em_aggregation.R' )
+#source( '../code/module-A/A3.1.GCAM_sector_removal.R' )
+source( '../code/module-A/A3.2.IAM_missing_em_filling.R' )
+source( '../code/module-A/A3.3.GCAM_waste_em_harm.R' )
+source( '../code/module-A/A4.1.IAM_ref_em_offset_calc.R' )
+source( '../code/module-A/A4.2.IAM_ref_em_offset_ext.R' )
+source( '../code/module-A/A5.1.IAM_em_harmonaze.R' )
+source( '../code/module-A/A9.IAM_harmonized_format_cleaning.R' )
 
 # -----------------------------------------------------------------------------
 # 3. clean the intermediate files
